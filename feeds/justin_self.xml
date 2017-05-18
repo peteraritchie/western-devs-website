@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Western Devs</title>
+  
+  <link href="/feeds/justin_self" rel="self" type="application/atom+xml"/>
+  <link href="http://www.westerndevs.com" rel="alternate" type="application/atom+xml"/>
+  
+  <updated>2017-05-18T21:09:05.000Z</updated>
+  <id>http://www.westerndevs.com/</id>
+  
+  <author>
+    <name>Western Devs</name>
+	<uri>http://www.westerndevs.com</uri>
+    <email>info@westerndevs.com</email>
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title type="html">Add some spice to your life with Resharper Templates</title>
+    <link href="http://www.westerndevs.com/Azure/Add-some-spice-to-your-life-with-resharer-templates/" rel="alternate" type="text/html"/>
+    <id>http://www.westerndevs.com/Azure/Add-some-spice-to-your-life-with-resharer-templates/</id>
+    <published>2016-10-04T21:30:00.000Z</published>
+    <updated>2017-05-18T21:09:05.000Z</updated>
+	<author>
+	
+	  
+	  <name>Justin Self</name>
+	  <email>justinself@outlook.com</email>
+	
+	  <uri>http://www.westerndevs.com</uri>
+	</author>
+    
+    <content type="html"><![CDATA[<p>Do you use Resharper? Do you have 5 minutes? Awesome, let's change your life.</p><a id="more"></a><p>Open Visual Studio. Click on the <code>Resharper</code> menu item, navigate to Tools &gt; Template Explorer, then click on the new template button (see image);</p><p><img src="http://i.imgur.com/gkkaV52.png" alt="Imgur"></p><p>In the editor, paste this: <code>//TODO : $user$ $date$ $description$</code></p><p>On the right, you'll now see three parameters. For <code>user</code>, click &quot;choose macro&quot;, and the select &quot;Full user name of current user&quot;.</p><p>For the <code>date</code> parameter, click &quot;Choose macro&quot;, and then select &quot;Current data specified format&quot;. In the format box, type &quot;MM/dd/yyyy&quot;.</p><p>Uncheck the <code>editable</code> checkboxes for <code>user</code> and <code>date</code>.</p><p>Lastly, in the &quot;Shortcut&quot; box, type &quot;todo&quot; and name it &quot;todo helper&quot;.</p><p><img src="http://i.imgur.com/DGqDxdb.png" alt="Imgur"></p><p>Ok, save and make a new one for &quot;hack&quot; comments with &quot;//HACK : $user$ $date$ $description$&quot;</p><p>Now, you should be able to go into your C# class files and do this:</p><p><img src="http://i.imgur.com/P8OUP3A.gif" alt="Imgur"></p><p>Cool, huh?</p><p>Ok, now let's make a unit test help with this:</p><pre><code>[Test]public void $methodName$(){    //Arrange    $END$    //Act    //Assert}</code></pre><p>I use the shortcut <code>nut</code> for &quot;nUnit Test&quot;. If you use other testing frameworks, just modify it to suite your needs.</p><p>Save it and now add tests like this:</p><p><img src="http://i.imgur.com/jVo9WoU.gif" alt="Imgur"></p><p>Pretty sweet, right? Life changing? Maybe.</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Do you use Resharper? Do you have 5 minutes? Awesome, let&#39;s change your life.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="Azure" scheme="http://www.westerndevs.com/categories/Azure/"/>
+    
+    
+  </entry>
+  
+  <entry>
+    <title type="html">Extensibility In Message Based Systems With NServiceBus</title>
+    <link href="http://www.westerndevs.com/nservicebus/extensibility-in-message-systems-with-nservicebus/" rel="alternate" type="text/html"/>
+    <id>http://www.westerndevs.com/nservicebus/extensibility-in-message-systems-with-nservicebus/</id>
+    <published>2016-06-29T07:30:00.000Z</published>
+    <updated>2017-05-18T21:09:05.000Z</updated>
+	<author>
+	
+	  
+	  <name>Justin Self</name>
+	  <email>justinself@outlook.com</email>
+	
+	  <uri>http://www.westerndevs.com</uri>
+	</author>
+    
+    <content type="html"><![CDATA[<p>One of my favorite things about message based systems is the natural points of extensibility you can gain. Though, you don't get it for free if you aren't setting yourself up for it.</p><a id="more"></a><p>Let's say you work for a company that sells dog shoes online. Thinking about it, that's a dramatically under served market.</p><p>Currently, your company's website allows for users to pay with their credit card and then, hopefully within a few days, receive their shoes. So let's take a look at some sample code for the handler that processes the message for payment.</p><pre><code>public class ProcessPaymentHandler : IHandleMessage&lt;ProcessPayment&gt;{    public void Handle(ProcessPayment message)    {        paymentProviderClient.Charge(message.paymentData);        //save and log response    }}</code></pre><p>Ok, obviously a simple example but you get the idea.</p><p>Everything is working well and your client's canine pals are having their paws covered in stylish footware.</p><h2>The New Requirement</h2><p>Now your product owner comes to you with a new requirement: send a confirmation email once the payment has been processed. This is easy enough. Let's just have the ProcessPaymentHandler send a command to send the confirmation email.</p><pre><code>public class ProcessPaymentHandler : IHandleMessage&lt;ProcessPayment&gt;{    public void Handle(ProcessPayment message)    {        paymentProviderClient.Charge(message.paymentData);        //save and log response        var emailAddress = customerRepo.GetEmailByOrderId(message.OrderId);        bus.Send(new SendConfirmationEmail(emailAddress));    }}</code></pre><p>This is a common, albiet naive, approach to the problem. It will work, assuming we have a handler for the SendConfirmationEmail message to be received by, but there are some problems with it.</p><h2>Problems</h2><h3>Dependency</h3><p>The first problem is now the code that handles processing a payment has a dependency on the process that sends emails. This single line of code may not seem like a dependency problem, but maintaining code and clean architecture is a lot about managing dependencies. Introducing the command here forces the host of this handler to know about the location of the email handler.</p><p>There's also a deployment dependency. We now have to keep this handler in sync with the current version of the email handler.</p><p>If the message interface changes because the handler was expanded or for any other of a multitude of reasons, we now have to come back and change code that handles processing a payment because some other code related to an email has changed (admittedly, though, we could effectively manage different versions in messages). Which leads us to the next problem...</p><h3>Single Responsibility</h3><p>It's a violation of the Single Responsibility Principle (SRP) which basically means that a piece of code should have only one reason to change. The class is currently supporting two requirements (processing a payment and sending an email) therefore has two reasons to change.</p><h3>Open/Closed</h3><p>In order for us to add a new feature, we had to modify existing code. Sometimes that's inevitable, but sometimes it's a sign of a series of preceeding bad design choices. When that happens, it is a violation of the open/closed principle. This principle states that you should be able to extend functionality without having to modify the internals of existing code.</p><p>What we want is the ability to complete the feature for sending the email without having to modify the existing code.</p><h2>The Solution - Events</h2><p>If the ProcessPayment Handler published an event once it was done, then the Email Handler could subscribe to the event and take the appropriate action. This allows the payment processor to continue on its merry way being none the wiser that any process cares about it.</p><p>Here's the code for that:</p><pre><code>public class ProcessPaymentHandler : IHandleMessage&lt;ProcessPayment&gt;{    public void Handle(ProcessPayment message)    {        paymentProviderClient.Charge(message.paymentData);        //save and log response        bus.Publish(new PaymentProcessed(message.OrderId));    }}</code></pre><p>In this code, we removed the line getting the email address and the code to send a new SendConfirmationEmail command.</p><p>It's pretty clear why the first line was removed. Since we aren't sending the command, we don't need to find the email address.</p><p>The second line, however, has some subtleties that could be missed.</p><h3>Publish</h3><p>The command was &quot;sent&quot; while the event is &quot;published&quot;. Commands can be sent from N number of hosts but they are &quot;sent&quot; to a location because that location is always known. If a service has the contract and the correct queue, it can send any command it wants to. This means, however, that the service is now coupled to the processor of that command; being aware of its very existence is a coupling.</p><p>However, events are published from one and only one logical host but can be received by N number of hosts. Other services can subscribe to those events without the publishing service being aware of it. This inverts the coupling the other direction. The service that needs to do the action is now coupled to the service that publishes the event. The coupling here makes sense. In our case, the email service wants to know when it needs to send the confirmation email. So, we can allow it to couple to the PaymentProcesssor service.</p><p>If you are still not quite groking events vs commands, try this:</p><ul><li><p>Commands are like email. You know who is going to read it and you know where it is going. You send the email to one person with the expectation that they will read it and act on it.</p></li><li><p>Events are like this blog post. I have no idea if anyone will read it, who that person is or where they are located. I put it out in case anyone is interested in my data.</p></li></ul><p>I want to reiterate something really quickly: Anyone can send a command, but there must be only <strong>ONE</strong> service that handles it. Anyone can subscribe to an event but there must be only <strong>ONE</strong> service that publishes it.</p><h3>Naming</h3><p>The event is named as a past tense version of the command it was being published from. This is a convention I pretty much always use when naming commands and events. The commands are imperative. They represent actions your services can do and generally found in your ubiquitous language. The events are past tense. If your command name is &quot;DeleteAccount&quot; the event would be &quot;AccountDeleted&quot;.</p><p>Here's some sample code for handling the event:</p><pre><code>public class PaymentProcessedHandler : IHandleMessage&lt;PaymentProcessed&gt;{    public void Handle(ProcessPayment message)    {        bus.Send(new SendConfirmationEmail());    }}</code></pre><p>You may have noticed I'm sending a command from this event handler instead of just doing the work. There is a reason and I'll get to why I did that in another post.</p><h2>Extensibility</h2><p>Up to now, all we've really done is changed a command to an event and moved some logic to the event handler, which then delegates to another command handler. So where's the power in that?</p><p><em>Cue the Product Owner</em></p><p>Now we have some new requirements. Once a payment has been successfully processed, if this is a first time customer then the company wants to send out a special dog treat to the customer to give to their canine companion as a thank you for their business. So let's add that capability.</p><p>If we didn't have events, we would need to modify the existing code for processing a payment and have another command sent (which introduce more of the three problems from earlier). However, since we have events, all we need to do is let this catalogue service subscribe to the PaymentProcessed event and do its thing. This means we don't have to modify ANY code in the Payment Processor.</p><pre><code>public class PaymentProcessedHandler : IHandleMessage&lt;PaymentProcessed&gt;{    public void Handle(ProcessPayment message)    {        bus.Send(new SendPhysicalCatalouge());    }}</code></pre><p>We just extended the application without modifying any existing code. That's the power of using events. If the company decides they also want to add the customer to a list for someone to call and thank them personally, we could subscribe to the event again. If the company decided they no longer wanted to send dog treats, then we simply unsubscribe to the event.</p><p>All of this is done without redeploying the current, existing code (PaymentProcessor).</p><h2>Under The Hood</h2><p>When you add a subscription to a host, NServiceBus actually sends a message from the subscribing host to the publishing host. This informs the publishing host that the subscribing host wants a copy of the event when it is published. This gets stored in whatever persistence you previously chose: (Azure Storage, SQL, MSMQ, etc). This is true for all persistences except when you are using Azure ServiceBus or RabbitMQ because they both native pub/sub capabilities and hold onto the subscription data.</p><h2>TL;DR</h2><p>In order to allow for extensibility and prepare for future features, every command should have a corresponding event to go with it. With NServiceBus, if no one has subscribed to the event, then nothing will happen so there's no overhead of adding the events to the handler.</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;One of my favorite things about message based systems is the natural points of extensibility you can gain. Though, you don&#39;t get it for free if you aren&#39;t setting yourself up for it.&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="nservicebus" scheme="http://www.westerndevs.com/categories/nservicebus/"/>
+    
+    
+  </entry>
+  
+</feed>
